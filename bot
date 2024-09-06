@@ -1,0 +1,72 @@
+import logging
+import asyncio
+from aiogram import Bot, Dispatcher, Router  
+from aiogram.types import Message, KeyboardButton, ReplyKeyboardMarkup
+from aiogram.filters import Command
+from token import API_TOKEN
+
+logging.basicConfig(level=logging.INFO)
+
+bot = Bot(token=API_TOKEN)
+dp = Dispatcher()
+router = Router()
+dp.include_router(router)
+
+main_keyboard = ReplyKeyboardMarkup(
+    keyboard=[
+        [KeyboardButton(text='Backend')],
+        [KeyboardButton(text='Frontend')],
+        [KeyboardButton(text='Android')],
+        [KeyboardButton(text='Design')],
+        [KeyboardButton(text='Contacts')]
+    ],
+    resize_keyboard=True
+)
+
+@router.message(Command("start"))
+async def start_command(message: Message):
+    await message.reply("Выберите направление разработки", reply_markup=main_keyboard)
+
+@router.message(lambda message: message.text == 'Backend')
+async def backend_command(message: Message):
+    await message.reply(
+        """Бэкенд-разработка (backend development) — это область программирования, 
+        которая занимается созданием серверной части веб-приложений и сайтов. 
+        Бэкенд-разработчики отвечают за внутреннюю логику работы приложения, 
+        взаимодействие с базами данных, а также интеграцию с внешними сервисами и API."""
+    )
+
+@router.message(lambda message: message.text == 'Frontend')
+async def frontend_command(message: Message):
+    await message.reply(
+        """Фронтенд-разработка (frontend development) — это область программирования, 
+        которая занимается созданием пользовательского интерфейса веб-сайтов и веб-приложений. 
+        Фронтенд-разработчики отвечают за то, как сайт выглядит и как он взаимодействует с пользователями."""
+    )
+
+@router.message(lambda message: message.text == 'Android')
+async def android_command(message: Message):
+    await message.reply(
+        """Android-разработчик — это специалист, который занимается созданием приложений и игр 
+        для устройств на операционной системе Android. Вот основные аспекты работы Android-разработчика."""
+    )
+
+@router.message(lambda message: message.text == 'Design')
+async def design_command(message: Message):
+    await message.reply(
+        """Дизайн — это процесс создания и проектирования различных объектов, которые сочетают в себе 
+        функциональность и эстетическую привлекательность. Дизайн охватывает множество областей, 
+        включая графический дизайн, промышленный дизайн, веб-дизайн, интерьерный дизайн и многие другие."""
+    )
+
+@router.message(lambda message: message.text == 'Contacts')
+async def contacts_command(message: Message):
+    await message.reply(
+        "Контакты: +996 (3222) 8 54 53, +996 (3222) 85 4 74(лучше, не звонить)"
+    )
+
+async def main():
+    await dp.start_polling(bot)
+
+if __name__ == '__main__':
+    asyncio.run(main())
