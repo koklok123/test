@@ -1,0 +1,105 @@
+import asyncio
+import logging
+import sqlite3
+from aiogram import Bot, Dispatcher, F
+from aiogram.types import Message
+from aiogram.filters import Command, CommandStart
+from Token import API_TOKEN_2
+
+bot = Bot(token=API_TOKEN_2)
+dp = Dispatcher()
+admin_id = 1904375259
+
+
+connection = sqlite3.connect("tasks.db")
+cursor = connection.cursor()
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS tasks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    task TEXT
+)
+""")
+connection.commit()
+
+
+@dp.message(CommandStart())
+async def start_bot(message: Message):
+    await message.answer(
+        "Привет! Я бот для управления задачами. Используй команду /add, "
+        "чтобы добавить задачу, /view — чтобы посмотреть все задачи, и /delete — "
+        "чтобы удалить задачу."
+    )
+
+
+@dp.message(Command("add"))
+async def add_task(message: Message):
+    await message.answer("Введите задачу, которую хотите добавить:")
+
+    
+    @dp.message(F.text)
+    async def save_task(message: Message):
+        cursor.execute(
+            "INSERT INTO tasks (user_id, task) VALUES (?, ?)",
+            (message.from_user.id, message.text)
+        )
+        connection.commit()
+        await message.answer("Задача сохранена!")
+
+
+@dp.message(Command("view"))
+async def view_tasks(message: Message):
+    cursor.execute(
+        "SELECT id, task FROM tasks WHERE user_id = ?",
+        (message.from_user.id,)
+    )
+    tasks = cursor.fetchall()
+    if tasks:
+        response = "Ваши задачи:\n"
+        for task_id, task in tasks:
+            response += f"{task_id}. {task}\n"
+    else:
+        response = "У вас нет сохраненных задач."
+    await message.answer(response)
+
+
+@dp.message(Command("delete"))
+async def delete_task(message: Message):
+    cursor.execute(
+        "SELECT id, task FROM tasks WHERE user_id = ?",
+        (message.from_user.id,)
+    )
+    tasks = cursor.fetchall()
+    if tasks:
+        response = "Выберите номер задачи, которую хотите удалить:\n"
+        for task_id, task in tasks:
+            response += f"{task_id}. {task}\n"
+        await message.answer(response)
+
+       
+        @dp.message(F.text)
+        async def confirm_delete(message: Message):
+            try:
+                task_id = int(message.text.strip())
+                cursor.execute(
+                    "DELETE FROM tasks WHERE id = ? AND user_id = ?",
+                    (task_id, message.from_user.id)
+                )
+                if cursor.rowcount > 0:
+                    connection.commit()
+                    await message.answer("Задача удалена!")
+                else:
+                    await message.answer("Задача с таким номером не найдена.")
+            except ValueError:
+                await message.answer("Пожалуйста, введите корректный номер задачи.")
+
+async def main():
+    await dp.start_polling(bot)
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("Exit")
